@@ -1,8 +1,874 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>BioGuard</title></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioGuard — SIM-Swap Fraud Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117; --card: #161b22; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e;
+      --green: #22c55e; --yellow: #eab308; --orange: #f97316;
+      --red: #ef4444; --darkred: #991b1b; --accent: #58a6ff;
+      --radius-card: 12px; --radius-btn: 8px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes gradient { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+    @keyframes slideInLeft { from{opacity:0;transform:translateX(-60px);} to{opacity:1;transform:translateX(0);} }
+    @keyframes flipIn { from{opacity:0;transform:rotateY(90deg);} to{opacity:1;transform:rotateY(0deg);} }
+    @keyframes flowDot { 0%{left:-10px;opacity:0;} 10%{opacity:1;} 90%{opacity:1;} 100%{left:calc(100% + 10px);opacity:0;} }
+    @keyframes glowPulse { 0%,100%{text-shadow:0 0 20px #58a6ff,0 0 40px #58a6ff,0 0 60px #0ea5e9;} 50%{text-shadow:0 0 40px #58a6ff,0 0 80px #0ea5e9,0 0 100px #22d3ee;} }
+    @keyframes spin { to{transform:rotate(360deg);} }
+    @keyframes pulseDot { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.7);} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0);} }
+    @keyframes rippleAnim { to{transform:scale(4);opacity:0;} }
+    @keyframes borderRotate { from{--angle:0deg;} to{--angle:360deg;} }
+
+    .container { max-width:1200px; margin:0 auto; padding:0 24px; }
+    section { padding:80px 0; }
+    .section-title { font-size:2rem; font-weight:800; color:#fff; margin-bottom:8px; }
+    .section-sub { color:var(--muted); font-size:1rem; margin-bottom:48px; }
+
+    #error-banner { background:#3b1a1a; border:1px solid #7f1d1d; color:#fca5a5; text-align:center; padding:14px 24px; font-size:0.95rem; display:none; position:sticky; top:0; z-index:100; }
+
+    /* Hero */
+    #hero { min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; background:linear-gradient(-45deg,#0d1117,#0f1923,#0d1f2d,#0a1628,#0d1117); background-size:400% 400%; animation:gradient 12s ease infinite; padding:40px 24px; }
+    #hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%,rgba(88,166,255,0.08) 0%,transparent 70%); pointer-events:none; }
+    .hero-content { position:relative; z-index:1; }
+    .hero-shield { font-size:5rem; display:block; margin-bottom:16px; filter:drop-shadow(0 0 30px rgba(88,166,255,0.6)); }
+    .hero-title { font-size:clamp(3rem,8vw,5.5rem); font-weight:800; color:#fff; letter-spacing:-2px; animation:glowPulse 3s ease-in-out infinite; }
+    .hero-tagline { font-size:clamp(1rem,3vw,1.4rem); color:var(--accent); font-weight:600; margin:16px 0 12px; }
+    .hero-sub { font-size:1rem; color:var(--muted); max-width:600px; margin:0 auto 32px; }
+    .live-indicator { display:inline-flex; align-items:center; gap:8px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:20px; padding:8px 20px; font-weight:600; font-size:0.9rem; color:var(--green); cursor:default; transition:all 0.3s ease; }
+    .live-indicator.offline { background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.3); color:var(--red); }
+    .live-dot { width:10px; height:10px; border-radius:50%; background:var(--green); animation:pulseDot 2s ease-in-out infinite; display:inline-block; }
+    .live-indicator.offline .live-dot { background:var(--red); animation:none; }
+    .hero-docs-link { display:inline-flex; align-items:center; gap:6px; margin-top:16px; margin-left:12px; color:var(--muted); text-decoration:none; font-size:0.9rem; transition:color 0.3s ease; }
+    .hero-docs-link:hover { color:var(--accent); }
+
+    /* How It Works */
+    #how-it-works { background:#0d1117; }
+    .steps-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+    .step-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); padding:28px 20px; text-align:center; opacity:0; transition:transform 0.3s ease,box-shadow 0.3s ease; }
+    .step-card:hover { transform:translateY(-5px); box-shadow:0 12px 32px rgba(0,0,0,0.4); }
+    .step-card.visible { animation:fadeInUp 0.6s ease forwards; }
+    .step-card:nth-child(2) { animation-delay:0.2s; }
+    .step-card:nth-child(3) { animation-delay:0.4s; }
+    .step-card:nth-child(4) { animation-delay:0.6s; }
+    .step-icon { font-size:2.5rem; margin-bottom:16px; display:block; }
+    .step-num { font-size:0.7rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
+    .step-title { font-size:1rem; font-weight:700; color:#fff; margin-bottom:8px; }
+    .step-desc { font-size:0.85rem; color:var(--muted); }
+
+    /* Live Demo */
+    #live-demo { background:#0a0f16; }
+    .demo-buttons { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:40px; }
+    .demo-btn { position:relative; overflow:hidden; border:none; border-radius:var(--radius-btn); padding:20px 28px; font-family:inherit; font-size:1rem; font-weight:700; color:#fff; cursor:pointer; transition:transform 0.2s ease,box-shadow 0.2s ease; display:flex; align-items:center; justify-content:center; gap:10px; min-height:68px; }
+    .demo-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+    .demo-btn:active { transform:translateY(0); }
+    .demo-btn.fraud     { background:linear-gradient(135deg,#7f1d1d,#dc2626); }
+    .demo-btn.legit     { background:linear-gradient(135deg,#14532d,#16a34a); }
+    .demo-btn.emergency { background:linear-gradient(135deg,#7c2d12,#ea580c); }
+    .demo-btn.slow      { background:linear-gradient(135deg,#4c1d95,#7c3aed); }
+    .demo-btn.loading   { opacity:0.7; pointer-events:none; }
+    .spinner { width:20px; height:20px; border:3px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+    .ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,0.3); transform:scale(0); animation:rippleAnim 0.6s linear; pointer-events:none; }
+    #demo-results { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); padding:32px; display:none; }
+    .results-grid { display:grid; grid-template-columns:auto 1fr; gap:32px; align-items:start; }
+    .gauge-wrap { text-align:center; }
+    .gauge-svg { width:180px; height:180px; }
+    .gauge-bg { fill:none; stroke:#21262d; stroke-width:14; }
+    .gauge-fill { fill:none; stroke-width:14; stroke-linecap:round; transform:rotate(-90deg); transform-origin:center; transition:stroke 0.5s ease; }
+    .gauge-num { font-size:2.8rem; font-weight:800; fill:#fff; dominant-baseline:middle; text-anchor:middle; }
+    .gauge-label { font-size:0.75rem; fill:var(--muted); dominant-baseline:middle; text-anchor:middle; }
+    .results-detail { min-width:0; }
+    .action-badge { display:inline-flex; align-items:center; gap:10px; border-radius:10px; padding:14px 24px; font-size:1.2rem; font-weight:800; margin-bottom:20px; }
+    .combos-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; min-height:32px; }
+    .combo-badge { background:rgba(88,166,255,0.15); border:1px solid rgba(88,166,255,0.3); color:var(--accent); border-radius:20px; padding:4px 14px; font-size:0.8rem; font-weight:600; opacity:0; }
+    .combo-badge.visible { animation:flipIn 0.4s ease forwards; }
+    .explanations-list { list-style:none; margin-bottom:16px; }
+    .explanations-list li { color:var(--muted); font-size:0.9rem; padding:5px 0; opacity:0; display:flex; align-items:flex-start; gap:8px; }
+    .explanations-list li.visible { animation:fadeInUp 0.3s ease forwards; }
+    .processing-time { color:var(--muted); font-size:0.8rem; }
+
+    /* Custom Scorer */
+    #custom-scorer { background:#0d1117; }
+    .collapsible-header { display:flex; align-items:center; justify-content:space-between; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); padding:20px 28px; cursor:pointer; transition:background 0.3s ease,border-color 0.3s ease; user-select:none; }
+    .collapsible-header:hover { background:#1c2129; border-color:var(--accent); }
+    .collapsible-title { font-size:1.2rem; font-weight:700; color:#fff; }
+    .collapsible-arrow { color:var(--muted); font-size:1.2rem; transition:transform 0.3s ease; }
+    .collapsible-arrow.open { transform:rotate(180deg); }
+    .collapsible-body { max-height:0; overflow:hidden; transition:max-height 0.5s ease; }
+    .collapsible-body.open { max-height:2000px; }
+    .form-inner { background:var(--card); border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius-card) var(--radius-card); padding:28px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+    .form-field { display:flex; flex-direction:column; gap:6px; }
+    .form-label { font-size:0.85rem; font-weight:600; color:var(--text); display:flex; align-items:center; gap:6px; }
+    .tooltip { position:relative; cursor:help; }
+    .tooltip-icon { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; background:var(--border); border-radius:50%; font-size:0.65rem; color:var(--muted); font-style:normal; }
+    .tooltip-text { display:none; position:absolute; bottom:125%; left:0; background:#21262d; border:1px solid var(--border); border-radius:6px; padding:8px 12px; font-size:0.78rem; color:var(--text); width:220px; z-index:10; line-height:1.4; }
+    .tooltip:hover .tooltip-text { display:block; }
+    .slider-row { display:flex; align-items:center; gap:12px; }
+    input[type="range"] { flex:1; -webkit-appearance:none; appearance:none; height:4px; background:var(--border); border-radius:2px; outline:none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; background:var(--accent); border-radius:50%; cursor:pointer; }
+    .slider-val { min-width:48px; text-align:right; font-size:0.85rem; font-weight:600; color:var(--accent); }
+    input[type="number"] { background:#21262d; border:1px solid var(--border); border-radius:6px; padding:8px 12px; color:var(--text); font-family:inherit; font-size:0.9rem; width:100%; outline:none; transition:border-color 0.3s ease; }
+    input[type="number"]:focus { border-color:var(--accent); }
+    .toggle-wrap { display:flex; align-items:center; gap:12px; }
+    .toggle { position:relative; width:48px; height:26px; flex-shrink:0; }
+    .toggle input { display:none; }
+    .toggle-track { position:absolute; inset:0; background:var(--border); border-radius:13px; cursor:pointer; transition:background 0.3s ease; }
+    .toggle-track::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; background:#fff; border-radius:50%; transition:transform 0.3s ease; }
+    .toggle input:checked + .toggle-track { background:var(--accent); }
+    .toggle input:checked + .toggle-track::after { transform:translateX(22px); }
+    .toggle-label { font-size:0.85rem; color:var(--muted); }
+    .submit-btn { background:linear-gradient(135deg,#1d4ed8,#3b82f6); border:none; border-radius:var(--radius-btn); padding:16px 32px; color:#fff; font-family:inherit; font-size:1rem; font-weight:700; cursor:pointer; transition:transform 0.2s ease,box-shadow 0.2s ease,opacity 0.2s ease; display:flex; align-items:center; gap:8px; }
+    .submit-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(59,130,246,0.3); }
+    .submit-btn:disabled { opacity:0.6; pointer-events:none; }
+    #custom-results { margin-top:24px; background:#0d1117; border:1px solid var(--border); border-radius:var(--radius-card); padding:28px; display:none; }
+
+    /* Combinations */
+    #combinations { background:#0a0f16; }
+    .combos-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+    @property --angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+    .combo-card { position:relative; background:var(--card); border-radius:var(--radius-card); padding:2px; opacity:0; transition:transform 0.3s ease; }
+    .combo-card::before { content:''; position:absolute; inset:0; border-radius:var(--radius-card); padding:2px; background:conic-gradient(from var(--angle),transparent 60%,var(--combo-color,#58a6ff) 80%,transparent 100%); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; animation:borderRotate 4s linear infinite; }
+    .combo-card.visible { animation:fadeInUp 0.6s ease forwards; }
+    .combo-card:hover { transform:translateY(-4px); }
+    .combo-inner { background:var(--card); border-radius:calc(var(--radius-card) - 2px); padding:24px; height:100%; }
+    .combo-letter-wrap { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:800; margin-bottom:16px; }
+    .combo-name { font-size:1rem; font-weight:700; color:#fff; margin-bottom:4px; }
+    .combo-subtitle { font-size:0.8rem; color:var(--muted); margin-bottom:12px; }
+    .combo-desc { font-size:0.85rem; color:var(--text); margin-bottom:12px; }
+    .combo-example { background:rgba(255,255,255,0.04); border-left:3px solid var(--combo-color,var(--accent)); border-radius:0 6px 6px 0; padding:10px 14px; font-size:0.8rem; color:var(--muted); font-style:italic; }
+
+    /* Response Tiers */
+    #response-tiers { background:#0d1117; }
+    .tiers-stack { display:flex; flex-direction:column; gap:12px; }
+    .tier-bar-wrap { opacity:0; }
+    .tier-bar-wrap.visible { animation:slideInLeft 0.6s ease forwards; }
+    .tier-bar-wrap:nth-child(2).visible { animation-delay:0.15s; }
+    .tier-bar-wrap:nth-child(3).visible { animation-delay:0.3s; }
+    .tier-bar-wrap:nth-child(4).visible { animation-delay:0.45s; }
+    .tier-bar-wrap:nth-child(5).visible { animation-delay:0.6s; }
+    .tier-bar { display:flex; align-items:center; border-radius:10px; padding:16px 20px; gap:16px; transition:box-shadow 0.3s ease; }
+    .tier-bar.active-tier { box-shadow:0 0 0 3px rgba(255,255,255,0.4),0 0 20px rgba(255,255,255,0.1); }
+    .tier-range { font-size:0.75rem; font-weight:700; color:rgba(255,255,255,0.7); min-width:60px; }
+    .tier-label { font-size:0.95rem; font-weight:600; color:#fff; flex:1; }
+
+    /* Architecture */
+    #architecture { background:#0a0f16; }
+    .arch-flow { display:flex; align-items:center; overflow-x:auto; padding-bottom:16px; }
+    .arch-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); padding:20px 16px; text-align:center; min-width:140px; flex-shrink:0; transition:box-shadow 0.3s ease,border-color 0.3s ease; }
+    .arch-box:hover { box-shadow:0 0 20px rgba(88,166,255,0.3); border-color:var(--accent); }
+    .arch-icon { font-size:2rem; display:block; margin-bottom:8px; }
+    .arch-title { font-size:0.85rem; font-weight:700; color:#fff; margin-bottom:4px; }
+    .arch-sub { font-size:0.7rem; color:var(--muted); }
+    .arch-arrow { position:relative; width:60px; height:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .arch-arrow::after { content:'→'; color:var(--muted); font-size:1.2rem; }
+    .flow-dot { position:absolute; top:50%; width:8px; height:8px; border-radius:50%; background:var(--accent); transform:translateY(-50%); animation:flowDot 2s linear infinite; }
+    .flow-dot:nth-child(2) { animation-delay:0.67s; }
+    .flow-dot:nth-child(3) { animation-delay:1.33s; }
+
+    /* Statistics */
+    #statistics { background:#0d1117; }
+    .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+    .stat-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); padding:32px 24px; text-align:center; opacity:0; }
+    .stat-card.visible { animation:fadeInUp 0.6s ease forwards; }
+    .stat-num { font-size:3rem; font-weight:800; color:var(--accent); display:block; margin-bottom:8px; }
+    .stat-label { color:var(--muted); font-size:0.9rem; }
+    #stats-offline { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); padding:40px; text-align:center; color:var(--muted); display:none; }
+
+    /* Footer */
+    footer { background:#080d12; border-top:1px solid var(--border); padding:40px 24px; text-align:center; }
+    .footer-heart { font-size:1.1rem; margin-bottom:8px; color:var(--text); }
+    .footer-version { color:var(--muted); font-size:0.85rem; margin-bottom:16px; }
+    .footer-links { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin-bottom:16px; }
+    .footer-links a { color:var(--muted); text-decoration:none; font-size:0.9rem; transition:color 0.3s ease; }
+    .footer-links a:hover { color:var(--accent); }
+    .footer-copy { color:#4a5568; font-size:0.8rem; }
+
+    /* Responsive */
+    @media(max-width:900px){.steps-grid{grid-template-columns:repeat(2,1fr);}.combos-grid{grid-template-columns:repeat(2,1fr);}.stats-grid{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:768px){.demo-buttons{grid-template-columns:1fr;}.results-grid{grid-template-columns:1fr;}.form-grid{grid-template-columns:1fr;}.arch-flow{flex-direction:column;align-items:stretch;}.arch-arrow{transform:rotate(90deg);}}
+    @media(max-width:600px){.steps-grid{grid-template-columns:1fr;}.combos-grid{grid-template-columns:1fr;}.stats-grid{grid-template-columns:1fr;}.section-title{font-size:1.5rem;}}
+  </style>
+</head>
 <body>
-<h1>BioGuard API</h1>
-<p>Visit <a href="/docs">/docs</a> for the interactive API documentation.</p>
+
+<div id="error-banner">⚠️ API appears to be offline. Start it with: <code>python api.py</code></div>
+
+<!-- 1. HERO -->
+<section id="hero">
+  <div class="hero-content">
+    <span class="hero-shield">🛡️</span>
+    <h1 class="hero-title">BioGuard</h1>
+    <p class="hero-tagline">AI-Powered SIM-Swap Fraud Detection for Kenya</p>
+    <p class="hero-sub">We protect mobile money users by detecting when someone steals your SIM card and tries to drain your account</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <div class="live-indicator" id="live-indicator">
+        <span class="live-dot" id="live-dot"></span>
+        <span id="live-text">LIVE</span>
+      </div>
+      <a href="/docs" class="hero-docs-link">📖 API Docs →</a>
+    </div>
+  </div>
+</section>
+
+<!-- 2. HOW IT WORKS -->
+<section id="how-it-works">
+  <div class="container">
+    <h2 class="section-title">🔍 How It Works</h2>
+    <p class="section-sub">Four steps from a SIM swap to a protected account</p>
+    <div class="steps-grid">
+      <div class="step-card">
+        <span class="step-icon">📱</span>
+        <div class="step-num">Step 1</div>
+        <div class="step-title">SIM Swap Detected</div>
+        <div class="step-desc">Someone swaps your SIM card at a mobile shop</div>
+      </div>
+      <div class="step-card">
+        <span class="step-icon">🔍</span>
+        <div class="step-num">Step 2</div>
+        <div class="step-title">21 Signals Analyzed</div>
+        <div class="step-desc">BioGuard checks behavioral patterns, device info, location, and timing</div>
+      </div>
+      <div class="step-card">
+        <span class="step-icon">🧠</span>
+        <div class="step-num">Step 3</div>
+        <div class="step-title">AI Scores Risk (0–100)</div>
+        <div class="step-desc">Our ensemble of rules, XGBoost, and anomaly detection calculates a risk score</div>
+      </div>
+      <div class="step-card">
+        <span class="step-icon">🛡️</span>
+        <div class="step-num">Step 4</div>
+        <div class="step-title">Smart Protection</div>
+        <div class="step-desc">Proportional response: from monitoring to freezing, based on threat level</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. LIVE SCORING DEMO -->
+<section id="live-demo">
+  <div class="container">
+    <h2 class="section-title">🎮 Try It Live</h2>
+    <p class="section-sub">Click a scenario to score it in real-time against the BioGuard API</p>
+    <div class="demo-buttons">
+      <button class="demo-btn fraud"     id="btn-fraud"     onclick="runDemo('fraud')">🚨 Fraud Scenario</button>
+      <button class="demo-btn legit"     id="btn-legit"     onclick="runDemo('legit')">✅ Legitimate User</button>
+      <button class="demo-btn emergency" id="btn-emergency" onclick="runDemo('emergency')">⚡ Emergency Drain</button>
+      <button class="demo-btn slow"      id="btn-slow"      onclick="runDemo('slow')">🐌 Slow Fraudster</button>
+    </div>
+    <div id="demo-results">
+      <div class="results-grid">
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 200 200">
+            <circle class="gauge-bg" cx="100" cy="100" r="80"/>
+            <circle class="gauge-fill" id="demo-gauge-fill" cx="100" cy="100" r="80"
+                    stroke-dasharray="502.65" stroke-dashoffset="502.65"/>
+            <text class="gauge-num" x="100" y="96" id="demo-gauge-num">0</text>
+            <text class="gauge-label" x="100" y="118">Risk Score</text>
+          </svg>
+        </div>
+        <div class="results-detail">
+          <div class="action-badge" id="demo-action-badge">—</div>
+          <div class="combos-row" id="demo-combos"></div>
+          <ul class="explanations-list" id="demo-explanations"></ul>
+          <p class="processing-time" id="demo-time"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. CUSTOM TRANSACTION SCORER -->
+<section id="custom-scorer">
+  <div class="container">
+    <h2 class="section-title">🔧 Custom Transaction Scorer</h2>
+    <p class="section-sub">Adjust the parameters and score your own transaction scenario</p>
+    <div>
+      <div class="collapsible-header" onclick="toggleCollapsible()">
+        <span class="collapsible-title">🔧 Score Your Own Transaction</span>
+        <span class="collapsible-arrow" id="collapsible-arrow">▼</span>
+      </div>
+      <div class="collapsible-body" id="collapsible-body">
+        <div class="form-inner">
+          <form id="custom-form" onsubmit="submitCustom(event)">
+            <div class="form-grid">
+              <div class="form-field">
+                <label class="form-label">Time since SIM swap (min)
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">How many minutes ago was the SIM card swapped?</span></span>
+                </label>
+                <div class="slider-row">
+                  <input type="range" id="f-time" min="0" max="1440" value="7" step="1"
+                         oninput="document.getElementById('v-time').textContent=this.value">
+                  <span class="slider-val" id="v-time">7</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Amount (KES)
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">How much money is being sent in this transaction</span></span>
+                </label>
+                <input type="number" id="f-amount" value="45000" min="1">
+              </div>
+              <div class="form-field">
+                <label class="form-label">Balance before (KES)
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">Account balance before this transaction</span></span>
+                </label>
+                <input type="number" id="f-balance" value="48000" min="1">
+              </div>
+              <div class="form-field">
+                <label class="form-label">Recipient known?
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">Has this person sent money to this recipient before?</span></span>
+                </label>
+                <div class="toggle-wrap">
+                  <label class="toggle"><input type="checkbox" id="f-recipient"><span class="toggle-track"></span></label>
+                  <span class="toggle-label">Toggle on if recipient is known</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label">IMEI match?
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">Does the phone's hardware ID match the one previously registered?</span></span>
+                </label>
+                <div class="toggle-wrap">
+                  <label class="toggle"><input type="checkbox" id="f-imei"><span class="toggle-track"></span></label>
+                  <span class="toggle-label">Toggle on if IMEI matches</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Displacement (km)
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">Distance between the SIM swap location and the transaction location</span></span>
+                </label>
+                <div class="slider-row">
+                  <input type="range" id="f-disp" min="0" max="200" value="45" step="1"
+                         oninput="document.getElementById('v-disp').textContent=this.value">
+                  <span class="slider-val" id="v-disp">45</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label">IMEI swap correlation
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">How closely the device swap timing correlates with the SIM swap</span></span>
+                </label>
+                <div class="slider-row">
+                  <input type="range" id="f-corr" min="0" max="1" value="0.85" step="0.01"
+                         oninput="document.getElementById('v-corr').textContent=parseFloat(this.value).toFixed(2)">
+                  <span class="slider-val" id="v-corr">0.85</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Non-financial activities
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">Number of normal activities (checking balance, browsing) before transacting</span></span>
+                </label>
+                <div class="slider-row">
+                  <input type="range" id="f-nf" min="0" max="10" value="0" step="1"
+                         oninput="document.getElementById('v-nf').textContent=this.value">
+                  <span class="slider-val" id="v-nf">0</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Session count (first hour)
+                  <span class="tooltip"><em class="tooltip-icon">?</em><span class="tooltip-text">How many sessions in the first hour after SIM swap</span></span>
+                </label>
+                <div class="slider-row">
+                  <input type="range" id="f-sess" min="0" max="10" value="1" step="1"
+                         oninput="document.getElementById('v-sess').textContent=this.value">
+                  <span class="slider-val" id="v-sess">1</span>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="submit-btn" id="custom-submit-btn">🎯 Score This Transaction</button>
+          </form>
+          <div id="custom-results">
+            <div class="results-grid">
+              <div class="gauge-wrap">
+                <svg class="gauge-svg" viewBox="0 0 200 200">
+                  <circle class="gauge-bg" cx="100" cy="100" r="80"/>
+                  <circle class="gauge-fill" id="custom-gauge-fill" cx="100" cy="100" r="80"
+                          stroke-dasharray="502.65" stroke-dashoffset="502.65"/>
+                  <text class="gauge-num" x="100" y="96" id="custom-gauge-num">0</text>
+                  <text class="gauge-label" x="100" y="118">Risk Score</text>
+                </svg>
+              </div>
+              <div class="results-detail">
+                <div class="action-badge" id="custom-action-badge">—</div>
+                <div class="combos-row" id="custom-combos"></div>
+                <ul class="explanations-list" id="custom-explanations"></ul>
+                <p class="processing-time" id="custom-time"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. DETECTION COMBINATIONS -->
+<section id="combinations">
+  <div class="container">
+    <h2 class="section-title">🔤 Detection Combinations</h2>
+    <p class="section-sub">BioGuard uses 6 named behavioral combinations to identify different fraud patterns</p>
+    <div class="combos-grid">
+      <div class="combo-card" style="--combo-color:#ff4444;">
+        <div class="combo-inner">
+          <div class="combo-letter-wrap" style="background:rgba(255,68,68,0.2);color:#ff4444;">α</div>
+          <div class="combo-name">ALPHA</div>
+          <div class="combo-subtitle">Wallet Key on Fraud Phone</div>
+          <div class="combo-desc">Detects when someone drains an account immediately after a SIM swap using an unfamiliar device</div>
+          <div class="combo-example">A fraudster swaps your SIM, then uses a different phone to send all your M-Pesa balance to an unknown number within minutes</div>
+        </div>
+      </div>
+      <div class="combo-card" style="--combo-color:#ff8800;">
+        <div class="combo-inner">
+          <div class="combo-letter-wrap" style="background:rgba(255,136,0,0.2);color:#ff8800;">β</div>
+          <div class="combo-name">BETA</div>
+          <div class="combo-subtitle">Ghost Session Drain</div>
+          <div class="combo-desc">Catches rapid-fire transactions with no normal phone activity beforehand</div>
+          <div class="combo-example">The new SIM holder makes 5 transactions in 10 minutes without ever checking their balance or making a call first</div>
+        </div>
+      </div>
+      <div class="combo-card" style="--combo-color:#ffcc00;">
+        <div class="combo-inner">
+          <div class="combo-letter-wrap" style="background:rgba(255,204,0,0.2);color:#ffcc00;">γ</div>
+          <div class="combo-name">GAMMA</div>
+          <div class="combo-subtitle">Industrial Assembly Line</div>
+          <div class="combo-desc">Identifies organized fraud operations processing multiple victims in sequence</div>
+          <div class="combo-example">The same device and agent process 20 SIM swaps in one day, each followed by immediate fund transfers</div>
+        </div>
+      </div>
+      <div class="combo-card" style="--combo-color:#44aaff;">
+        <div class="combo-inner">
+          <div class="combo-letter-wrap" style="background:rgba(68,170,255,0.2);color:#44aaff;">δ</div>
+          <div class="combo-name">DELTA</div>
+          <div class="combo-subtitle">Teleporting Fraudster</div>
+          <div class="combo-desc">Flags impossible geographic movements between SIM swap and transaction</div>
+          <div class="combo-example">SIM swapped in Mombasa, but a transaction happens in Nairobi 15 minutes later — impossible without flying</div>
+        </div>
+      </div>
+      <div class="combo-card" style="--combo-color:#aa44ff;">
+        <div class="combo-inner">
+          <div class="combo-letter-wrap" style="background:rgba(170,68,255,0.2);color:#aa44ff;">ε</div>
+          <div class="combo-name">EPSILON</div>
+          <div class="combo-subtitle">Slow Burn Siphon</div>
+          <div class="combo-desc">Detects patient fraudsters who wait hours before slowly draining funds</div>
+          <div class="combo-example">Someone swaps your SIM at night, waits until morning, then makes several small transfers to stay under the radar</div>
+        </div>
+      </div>
+      <div class="combo-card" style="--combo-color:#44ffaa;">
+        <div class="combo-inner">
+          <div class="combo-letter-wrap" style="background:rgba(68,255,170,0.2);color:#44ffaa;">ζ</div>
+          <div class="combo-name">ZETA</div>
+          <div class="combo-subtitle">Proxy Network</div>
+          <div class="combo-desc">Identifies fraud routed through known high-risk agents or intermediaries</div>
+          <div class="combo-example">Transactions flowing through an agent who has been flagged for facilitating 50+ suspicious SIM swaps this month</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. RESPONSE TIERS -->
+<section id="response-tiers">
+  <div class="container">
+    <h2 class="section-title">📊 Response Tiers</h2>
+    <p class="section-sub">BioGuard doesn't just block or allow — it responds proportionally to the threat level</p>
+    <div class="tiers-stack">
+      <div class="tier-bar-wrap" data-tier="T0_ALLOW">
+        <div class="tier-bar" id="tier-T0_ALLOW" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);width:100%;">
+          <span class="tier-range">0 – 20</span>
+          <span class="tier-label">✅ ALLOW — Normal processing, transaction goes through</span>
+        </div>
+      </div>
+      <div class="tier-bar-wrap" data-tier="T1_OBSERVE">
+        <div class="tier-bar" id="tier-T1_OBSERVE" style="background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);width:92%;">
+          <span class="tier-range">21 – 40</span>
+          <span class="tier-label">👁️ MONITOR — Transaction proceeds but is flagged for review</span>
+        </div>
+      </div>
+      <div class="tier-bar-wrap" data-tier="T2_FRICTION">
+        <div class="tier-bar" id="tier-T2_FRICTION" style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);width:82%;">
+          <span class="tier-range">41 – 60</span>
+          <span class="tier-label">🔒 FRICTION — Extra verification step required (e.g., enter PIN again)</span>
+        </div>
+      </div>
+      <div class="tier-bar-wrap" data-tier="T3_STEP_UP">
+        <div class="tier-bar" id="tier-T3_STEP_UP" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);width:70%;">
+          <span class="tier-range">61 – 80</span>
+          <span class="tier-label">🔐 STEP-UP AUTH — Must verify identity through secondary channel</span>
+        </div>
+      </div>
+      <div class="tier-bar-wrap" data-tier="T4_FREEZE">
+        <div class="tier-bar" id="tier-T4_FREEZE" style="background:rgba(153,27,27,0.3);border:1px solid rgba(153,27,27,0.5);width:56%;">
+          <span class="tier-range">81 – 100</span>
+          <span class="tier-label">🚫 FREEZE — Transaction blocked, account locked, alert sent</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. ARCHITECTURE FLOW -->
+<section id="architecture">
+  <div class="container">
+    <h2 class="section-title">🏗️ How BioGuard Works Under the Hood</h2>
+    <p class="section-sub">A real-time scoring pipeline from phone event to action</p>
+    <div class="arch-flow">
+      <div class="arch-box">
+        <span class="arch-icon">📱</span>
+        <div class="arch-title">Phone Event</div>
+        <div class="arch-sub">USSD / App trigger</div>
+      </div>
+      <div class="arch-arrow"><div class="flow-dot"></div><div class="flow-dot"></div><div class="flow-dot"></div></div>
+      <div class="arch-box">
+        <span class="arch-icon">🔄</span>
+        <div class="arch-title">SIM Swap</div>
+        <div class="arch-sub">Network detection</div>
+      </div>
+      <div class="arch-arrow"><div class="flow-dot"></div><div class="flow-dot"></div><div class="flow-dot"></div></div>
+      <div class="arch-box">
+        <span class="arch-icon">⚙️</span>
+        <div class="arch-title">Feature Engine</div>
+        <div class="arch-sub">21 behavioral signals</div>
+      </div>
+      <div class="arch-arrow"><div class="flow-dot"></div><div class="flow-dot"></div><div class="flow-dot"></div></div>
+      <div class="arch-box">
+        <span class="arch-icon">📏</span>
+        <div class="arch-title">Rule Scoring</div>
+        <div class="arch-sub">30% weight</div>
+      </div>
+      <div class="arch-arrow"><div class="flow-dot"></div><div class="flow-dot"></div><div class="flow-dot"></div></div>
+      <div class="arch-box">
+        <span class="arch-icon">🤖</span>
+        <div class="arch-title">ML Ensemble</div>
+        <div class="arch-sub">XGBoost 45% + Isolation Forest 25%</div>
+      </div>
+      <div class="arch-arrow"><div class="flow-dot"></div><div class="flow-dot"></div><div class="flow-dot"></div></div>
+      <div class="arch-box">
+        <span class="arch-icon">🎯</span>
+        <div class="arch-title">Action Tier</div>
+        <div class="arch-sub">T0 → T4 response</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. STATISTICS -->
+<section id="statistics">
+  <div class="container">
+    <h2 class="section-title">📈 System Statistics</h2>
+    <p class="section-sub">Live data from the BioGuard scoring engine</p>
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <span class="stat-num" id="stat-total">–</span>
+        <div class="stat-label">Total Events Scored</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="stat-avg">–</span>
+        <div class="stat-label">Average Risk Score</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="stat-high">–</span>
+        <div class="stat-label">High Risk Events Detected</div>
+      </div>
+    </div>
+    <div id="stats-offline">🔄 Start the API and run the scoring engine to see live statistics</div>
+  </div>
+</section>
+
+<!-- 9. FOOTER -->
+<footer>
+  <div class="container">
+    <p class="footer-heart">Built with ❤️ for Niru AI Hackathon Kenya 🇰🇪</p>
+    <p class="footer-version">BioGuard v4.0 — Protecting Mobile Money</p>
+    <div class="footer-links">
+      <a href="/docs">📖 API Docs</a>
+      <a href="https://github.com/Mutumades/arbs-" target="_blank" rel="noopener">💻 GitHub</a>
+    </div>
+    <p class="footer-copy">© 2026 BioGuard</p>
+  </div>
+</footer>
+
+<script>
+'use strict';
+var CIRC = 502.65;
+var API_TIMEOUT_MS = 4000;
+var VISIBILITY_THRESHOLD = 0.12;
+
+var DEMO_PAYLOADS = {
+  emergency: { msisdn:'254722000001', time_since_swap_min:3, amount:49000, balance_before:50000, recipient_is_known:false, imei_match_pre_swap:false, displacement_km:0.5, imei_swap_correlation:0.95, non_financial_activity_count:0, session_count_first_hour:1 },
+  slow:      { msisdn:'254722000002', time_since_swap_min:180, amount:5000, balance_before:50000, recipient_is_known:false, imei_match_pre_swap:false, displacement_km:25, imei_swap_correlation:0.6, non_financial_activity_count:2, session_count_first_hour:3 }
+};
+
+var TIER_CONFIG = {
+  T0_ALLOW:    { label:'T0 — ALLOW',        color:'#22c55e', bg:'rgba(34,197,94,0.15)',  icon:'✅' },
+  T1_OBSERVE:  { label:'T1 — MONITOR',      color:'#eab308', bg:'rgba(234,179,8,0.15)', icon:'👁️' },
+  T2_FRICTION: { label:'T2 — FRICTION',     color:'#f97316', bg:'rgba(249,115,22,0.15)',icon:'🔒' },
+  T3_STEP_UP:  { label:'T3 — STEP-UP AUTH', color:'#ef4444', bg:'rgba(239,68,68,0.15)', icon:'🔐' },
+  T4_FREEZE:   { label:'T4 — FREEZE',       color:'#991b1b', bg:'rgba(153,27,27,0.3)',  icon:'🚫' }
+};
+
+function scoreColor(s) {
+  if (s <= 20) return '#22c55e';
+  if (s <= 40) return '#eab308';
+  if (s <= 60) return '#f97316';
+  if (s <= 80) return '#ef4444';
+  return '#991b1b';
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function checkHealth() {
+  try {
+    var res = await fetch('/health', { signal: AbortSignal.timeout(API_TIMEOUT_MS) });
+    if (!res.ok) throw new Error();
+    setLive(true);
+  } catch(e) { setLive(false); }
+}
+
+function setLive(online) {
+  var ind  = document.getElementById('live-indicator');
+  var text = document.getElementById('live-text');
+  var dot  = document.getElementById('live-dot');
+  if (online) {
+    ind.classList.remove('offline');
+    text.textContent = 'LIVE';
+    dot.style.background = '#22c55e';
+    dot.style.animation = 'pulseDot 2s ease-in-out infinite';
+  } else {
+    ind.classList.add('offline');
+    text.textContent = 'OFFLINE';
+    dot.style.background = '#ef4444';
+    dot.style.animation = 'none';
+    document.getElementById('error-banner').style.display = 'block';
+  }
+}
+
+function addRipple(btn, e) {
+  var rect = btn.getBoundingClientRect();
+  var r = document.createElement('span');
+  r.className = 'ripple';
+  var size = Math.max(rect.width, rect.height);
+  r.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+(e.clientX-rect.left-size/2)+'px;top:'+(e.clientY-rect.top-size/2)+'px';
+  btn.appendChild(r);
+  setTimeout(function(){ r.remove(); }, 700);
+}
+
+function animateGauge(fillId, numId, score) {
+  var fill = document.getElementById(fillId);
+  var num  = document.getElementById(numId);
+  fill.style.stroke = scoreColor(score);
+  fill.style.strokeDashoffset = CIRC;
+  var targetOffset = CIRC * (1 - score / 100);
+  var start = performance.now();
+  var dur = 1500;
+  function frame(now) {
+    var t = Math.min(1, (now - start) / dur);
+    var ease = 1 - Math.pow(1 - t, 3);
+    fill.style.strokeDashoffset = CIRC - ease * (CIRC - targetOffset);
+    num.textContent = Math.round(ease * score);
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function animateCounter(el, target) {
+  var start = performance.now();
+  var dur = 1500;
+  function frame(now) {
+    var t = Math.min(1, (now - start) / dur);
+    var ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(ease * target);
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function showResults(prefix, data) {
+  var resultsEl = document.getElementById(prefix + '-results');
+  resultsEl.style.display = 'block';
+  var score  = data.risk_score || 0;
+  var action = data.action || 'T0_ALLOW';
+  var tier   = TIER_CONFIG[action] || TIER_CONFIG['T0_ALLOW'];
+
+  animateGauge(prefix + '-gauge-fill', prefix + '-gauge-num', score);
+
+  var badge = document.getElementById(prefix + '-action-badge');
+  badge.textContent = tier.icon + ' ' + tier.label;
+  badge.style.background = tier.bg;
+  badge.style.color = tier.color;
+  badge.style.border = '2px solid ' + tier.color + '55';
+
+  document.querySelectorAll('.tier-bar').forEach(function(b){ b.classList.remove('active-tier'); });
+  var activeBar = document.getElementById('tier-' + action);
+  if (activeBar) activeBar.classList.add('active-tier');
+
+  var combosEl = document.getElementById(prefix + '-combos');
+  combosEl.innerHTML = '';
+  var greekMap = { ALPHA:'α', BETA:'β', GAMMA:'γ', DELTA:'δ', EPSILON:'ε', ZETA:'ζ' };
+  var combos = data.triggered_combinations || [];
+  combos.forEach(function(c, i) {
+    var b = document.createElement('span');
+    b.className = 'combo-badge';
+    b.textContent = (greekMap[c] || '') + ' ' + c;
+    combosEl.appendChild(b);
+    setTimeout(function(){ b.classList.add('visible'); }, i * 120);
+  });
+  if (!combos.length) {
+    combosEl.innerHTML = '<span style="color:var(--muted);font-size:0.85rem;">No combinations triggered</span>';
+  }
+
+  var explEl = document.getElementById(prefix + '-explanations');
+  explEl.innerHTML = '';
+  var expls = data.explanation || data.explanations || [];
+  expls.forEach(function(txt, i) {
+    var li = document.createElement('li');
+    li.innerHTML = '<span>⚠️</span><span>' + escapeHtml(txt) + '</span>';
+    explEl.appendChild(li);
+    setTimeout(function(){ li.classList.add('visible'); }, i * 150);
+  });
+  if (!expls.length) {
+    explEl.innerHTML = '<li style="color:var(--muted);opacity:1;">No specific signals flagged</li>';
+  }
+
+  var timeEl = document.getElementById(prefix + '-time');
+  if (data.processing_time_ms !== undefined) {
+    timeEl.textContent = '⚡ Scored in ' + Number(data.processing_time_ms).toFixed(1) + 'ms';
+  }
+}
+
+async function runDemo(type) {
+  var ids = { fraud:'btn-fraud', legit:'btn-legit', emergency:'btn-emergency', slow:'btn-slow' };
+  var btn = document.getElementById(ids[type]);
+  var origHTML = btn.innerHTML;
+  btn.innerHTML = '<div class="spinner"></div> Scoring…';
+  btn.classList.add('loading');
+
+  var url, method = 'GET', body = null;
+  if (type === 'fraud') {
+    url = '/demo/fraud';
+  } else if (type === 'legit') {
+    url = '/demo/legit';
+  } else if (type === 'emergency') {
+    url = '/demo/score'; method = 'POST';
+    body = JSON.stringify(DEMO_PAYLOADS.emergency);
+  } else {
+    url = '/demo/score'; method = 'POST';
+    body = JSON.stringify(DEMO_PAYLOADS.slow);
+  }
+
+  try {
+    var opts = { method: method };
+    if (body) { opts.body = body; opts.headers = { 'Content-Type': 'application/json' }; }
+    var res = await fetch(url, opts);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    showResults('demo', data);
+    document.getElementById('demo-results').scrollIntoView({ behavior:'smooth', block:'nearest' });
+    document.getElementById('error-banner').style.display = 'none';
+  } catch(err) {
+    document.getElementById('error-banner').style.display = 'block';
+    setLive(false);
+  } finally {
+    btn.innerHTML = origHTML;
+    btn.classList.remove('loading');
+  }
+}
+
+function toggleCollapsible() {
+  var body  = document.getElementById('collapsible-body');
+  var arrow = document.getElementById('collapsible-arrow');
+  var open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+async function submitCustom(e) {
+  e.preventDefault();
+  var btn = document.getElementById('custom-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Scoring…';
+  var payload = {
+    msisdn: '254722000099',
+    time_since_swap_min:          parseFloat(document.getElementById('f-time').value),
+    amount:                       parseInt(document.getElementById('f-amount').value, 10),
+    balance_before:               parseInt(document.getElementById('f-balance').value, 10),
+    recipient_is_known:           document.getElementById('f-recipient').checked,
+    imei_match_pre_swap:          document.getElementById('f-imei').checked,
+    displacement_km:              parseFloat(document.getElementById('f-disp').value),
+    imei_swap_correlation:        parseFloat(document.getElementById('f-corr').value),
+    non_financial_activity_count: parseInt(document.getElementById('f-nf').value, 10),
+    session_count_first_hour:     parseInt(document.getElementById('f-sess').value, 10)
+  };
+  try {
+    var res = await fetch('/demo/score', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    showResults('custom', data);
+    document.getElementById('custom-results').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  } catch(err) {
+    document.getElementById('error-banner').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🎯 Score This Transaction';
+  }
+}
+
+async function loadStats() {
+  try {
+    var res = await fetch('/stats', { signal: AbortSignal.timeout(API_TIMEOUT_MS) });
+    if (!res.ok) throw new Error();
+    var data = await res.json();
+    var total = data.total || 0;
+    if (total === 0) { showStatsOffline(); return; }
+    var byTier = data.by_tier || {};
+    var highRisk = (byTier['T3_STEP_UP'] || 0) + (byTier['T4_FREEZE'] || 0);
+    var midpoints = { T0_ALLOW:10, T1_OBSERVE:30, T2_FRICTION:50, T3_STEP_UP:70, T4_FREEZE:90 };
+    var wsum = 0;
+    Object.keys(byTier).forEach(function(k){ wsum += (midpoints[k]||0) * (byTier[k]||0); });
+    var avg = total > 0 ? Math.round(wsum / total) : 0;
+    document.getElementById('stats-grid').style.display = 'grid';
+    document.getElementById('stats-offline').style.display = 'none';
+    document.querySelectorAll('.stat-card').forEach(function(c){ c.classList.add('visible'); });
+    animateCounter(document.getElementById('stat-total'), total);
+    animateCounter(document.getElementById('stat-avg'), avg);
+    animateCounter(document.getElementById('stat-high'), highRisk);
+  } catch(err) { showStatsOffline(); }
+}
+
+function showStatsOffline() {
+  document.getElementById('stats-grid').style.display = 'none';
+  document.getElementById('stats-offline').style.display = 'block';
+}
+
+function setupObserver() {
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: VISIBILITY_THRESHOLD });
+  document.querySelectorAll('.step-card, .combo-card, .tier-bar-wrap, .stat-card').forEach(function(el){
+    obs.observe(el);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  checkHealth();
+  loadStats();
+  setupObserver();
+  document.querySelectorAll('.demo-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e){ addRipple(btn, e); });
+  });
+});
+</script>
 </body>
 </html>
