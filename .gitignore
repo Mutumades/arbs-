@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+.venv/
+venv/
+
+# Databases
+*.db
+
+# ML model artifacts
+models/
+
+# Generated data (already committed; ignore future additions)
+*.csv
+
+# Package metadata
+*.egg-info/
+
+# Test caches
+.pytest_cache/

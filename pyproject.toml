@@ -1,0 +1,10 @@
+[project]
+name = "bioguard"
+version = "4.0.0"
+description = "BioGuard — AI-powered SIM-swap fraud detection for mobile money"
+authors = [{ name = "BioGuard Team" }]
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
